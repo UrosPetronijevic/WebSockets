@@ -6,6 +6,7 @@ export default function App() {
   const [isConnected, setIsConnected] = useState<boolean>(false); // ✅ Connection state
   const [msg, setMsg] = useState<string>("");
   const wsRef = useRef<WebSocket | null>(null); // ✅ Ref avoids stale closure
+  const [recipient, setRecipient] = useState<string>(""); // ✅ NEW: Who to send TO
 
   const handleConnect = () => {
     if (!clientId.trim()) return alert("Enter your name!");
@@ -16,7 +17,7 @@ export default function App() {
     ws.onopen = () => {
       console.log("✅ Connected!");
       setIsConnected(true);
-      setMessages((prev) => [...prev, `Welcome, ${clientId}!`]); // Show welcome
+      setMessages((prev) => [...prev, `Welcome: ${clientId}!`]); // Show welcome
     };
 
     ws.onmessage = (event) => {
@@ -38,13 +39,13 @@ export default function App() {
   };
 
   const handleSend = () => {
-    if (!isConnected || !msg.trim() || !wsRef.current) return;
+    if (!isConnected || !msg.trim() || !recipient.trim() || !wsRef.current)
+      return;
 
-    const payload = { to: "bob", text: msg.trim() }; // ✅ Fix: "text" key
+    const payload = { to: recipient.trim(), text: msg.trim() }; // ✅ DYNAMIC to!
     wsRef.current.send(JSON.stringify(payload));
-    console.log(`📤 Sent:`, payload);
-    setMsg(""); // Clear input
-    // Don't add to messages here (server relays back if needed)
+    console.log(`📤 ${clientId} → ${recipient}:`, payload);
+    setMsg(""); // Clear msg only
   };
 
   return (
@@ -83,9 +84,15 @@ export default function App() {
               <input
                 value={msg}
                 onChange={(e) => setMsg(e.target.value)}
-                placeholder="Type message to bob..."
+                placeholder="Type message ..."
                 className="flex-1 p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                onKeyPress={(e) => e.key === "Enter" && handleSend()}
+              />
+
+              <input
+                value={recipient}
+                onChange={(e) => setRecipient(e.target.value)}
+                placeholder="Send to (to who)"
+                className="w-full p-3 border-2 ..."
               />
               <button
                 onClick={handleSend}
